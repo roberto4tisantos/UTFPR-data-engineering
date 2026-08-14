@@ -35,7 +35,8 @@ with DAG(
 
     dbt_run = BashOperator(
         task_id="dbt_run_all",
-        bash_command=f"cd {DBT_DIR} && dbt run {NORTHWIND}",
+        bash_command=f"cd {DBT_DIR} && dbt run {NORTHWIND}", 
+#        bash_command=f"cd {DBT_DIR} && dbt run", 
     )
 
     # `dbt_packages/` is gitignored, so a fresh clone has no packages installed.
