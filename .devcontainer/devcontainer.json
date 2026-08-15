@@ -1,0 +1,55 @@
+{
+  "name": "Engenharia de Dados",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+
+  // Precisa ser docker-in-docker: o compose usa caminhos relativos
+  // (./airflow/dags, ./dbt_lakehouse), que o docker-outside-of-docker
+  // resolveria no host e apontariam para o lugar errado.
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  // Medido dentro de um Codespaces real, depois do `docker compose up -d --build`:
+  //   imagens                     12,5 GB
+  //   camadas de escrita           4,1 GB
+  //   cache de build               8,8 GB
+  //   + base do dev container   ~= 29 GB
+  // Ou seja, 32 GB estoura. E o sintoma é péssimo: o disco enche no meio de um
+  // job Spark e aparece como `No space left on device` dentro de um rastro Java,
+  // além de matar o scheduler do Airflow sem derrubar o container.
+  //
+  // 64 GB obriga uma máquina de 8 núcleos, que consome a cota do aluno mais
+  // rápido. A alternativa seria publicar as imagens prontas num registry: sem
+  // `build:` não existe cache de build, e caberia com folga em 32 GB.
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb",
+    "storage": "64gb"
+  },
+
+  // No Codespaces o acesso é pela aba PORTS, não por localhost.
+  "forwardPorts": [8080, 8081, 8088, 9001, 8091],
+  "portsAttributes": {
+    "8080": { "label": "Airflow" },
+    "8081": { "label": "Spark Master" },
+    "8088": { "label": "Superset" },
+    "9001": { "label": "MinIO" },
+    "8091": { "label": "DBT Docs" }
+  },
+
+  // Não adianta construir as imagens do compose aqui para o prebuild aproveitar:
+  // a feature docker-in-docker monta /var/lib/docker como volume nomeado
+  // (dind-var-lib-docker-${devcontainerId}), e o prebuild fotografa o container,
+  // não o conteúdo dos volumes. As imagens seriam descartadas. O prebuild ainda
+  // adianta a imagem base, as features e o clone do repositório -- só não o
+  // `docker compose up -d --build`, que roda uma vez na máquina do aluno.
+
+  // Mesmo chmod do passo 3 do README, automatizado.
+  "postCreateCommand": "sudo chmod -R 777 airflow dbt_lakehouse",
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "redhat.vscode-yaml"]
+    }
+  }
+}
