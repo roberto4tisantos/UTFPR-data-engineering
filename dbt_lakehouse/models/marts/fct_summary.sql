@@ -8,6 +8,13 @@
 -- (catalog.schema.table) need a real catalog provider such as Unity Catalog,
 -- AWS Glue or an Iceberg REST catalog.
 
+{{
+    config{
+      catalog="gold",
+      schema="marts" 
+    }
+}}
+
 SELECT
   customer_id,
   total_amount
